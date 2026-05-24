@@ -437,9 +437,9 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
                                   id={`prev-${modIdx}-${lesIdx}`}
                                   checked={les.isPreview}
                                   onChange={(e) => updateLessonField(modIdx, lesIdx, 'isPreview', e.target.checked)}
-                                  className="rounded border-slate-800  bg-slate-950 focus:ring-violet-500 shrink-0 h-4 w-4"
+                                  className="rounded text-white border-slate-800  bg-slate-950 focus:ring-violet-500 shrink-0 h-4 w-4"
                                 />
-                                <label htmlFor={`prev-${modIdx}-${lesIdx}`} className="text-[10px] font-bold text-slate-450 uppercase tracking-widest cursor-pointer select-none">
+                                <label htmlFor={`prev-${modIdx}-${lesIdx}`} className="text-[10px] font-bold text-white uppercase tracking-widest cursor-pointer select-none">
                                   Free Preview
                                 </label>
                               </div>
