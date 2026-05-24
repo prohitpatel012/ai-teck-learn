@@ -395,12 +395,12 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
                                 value={les.title}
                                 onChange={(e) => updateLessonField(modIdx, lesIdx, 'title', e.target.value)}
                                 placeholder="Lesson Title"
-                                className="flex-1 rounded border border-slate-900 bg-slate-950 px-2 py-1 text-xs text-slate-350 focus:border-amber-500 focus:outline-none font-medium"
+                                className="flex-1 rounded border border-slate-900 bg-slate-950 px-2 py-1 text-xs text-white focus:border-amber-500 focus:outline-none font-medium"
                               />
                               <button
                                 type="button"
                                 onClick={() => removeLesson(modIdx, lesIdx)}
-                                className="text-slate-650 hover:text-rose-400 p-1 transition"
+                                className="text-white hover:text-rose-400 p-1 transition"
                                 title="Remove lesson"
                               >
                                 <Trash className="h-3.5 w-3.5" />
@@ -410,25 +410,25 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
                             {/* Lesson parameters grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               <div className="space-y-1">
-                                <label className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">YouTube URL / ID</label>
+                                <label className="text-[9px] font-semibold  uppercase tracking-wider">YouTube URL / ID</label>
                                 <input 
                                   type="text"
                                   required
                                   value={les.youtubeUrl}
                                   onChange={(e) => updateLessonField(modIdx, lesIdx, 'youtubeUrl', e.target.value)}
                                   placeholder="https://youtu.be/..."
-                                  className="w-full rounded border border-slate-900 bg-slate-950 px-2 py-1 text-[11px] text-slate-350 focus:border-amber-500 focus:outline-none font-mono"
+                                  className="w-full rounded border text-white border-slate-900 bg-slate-950 px-2 py-1 text-[11px] text-slate-350 focus:border-amber-500 focus:outline-none font-mono"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Duration (Minutes)</label>
+                                <label className="text-[9px] font-semibold  uppercase tracking-wider">Duration (Minutes)</label>
                                 <input 
                                   type="number"
                                   required
                                   value={les.duration}
                                   onChange={(e) => updateLessonField(modIdx, lesIdx, 'duration', e.target.value)}
                                   placeholder="10"
-                                  className="w-full rounded border border-slate-900 bg-slate-950 px-2 py-1 text-[11px] text-slate-350 focus:border-amber-500 focus:outline-none"
+                                  className="w-full rounded border border-slate-900 text-white px-2 py-1 text-[11px] text-slate-350 focus:border-amber-500 focus:outline-none"
                                 />
                               </div>
                               <div className="flex items-center gap-1.5 self-end pb-1.5 pl-1.5">
@@ -437,7 +437,7 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
                                   id={`prev-${modIdx}-${lesIdx}`}
                                   checked={les.isPreview}
                                   onChange={(e) => updateLessonField(modIdx, lesIdx, 'isPreview', e.target.checked)}
-                                  className="rounded border-slate-800 text-violet-650 bg-slate-950 focus:ring-violet-500 shrink-0 h-4 w-4"
+                                  className="rounded border-slate-800  bg-slate-950 focus:ring-violet-500 shrink-0 h-4 w-4"
                                 />
                                 <label htmlFor={`prev-${modIdx}-${lesIdx}`} className="text-[10px] font-bold text-slate-450 uppercase tracking-widest cursor-pointer select-none">
                                   Free Preview
