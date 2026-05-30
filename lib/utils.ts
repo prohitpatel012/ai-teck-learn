@@ -21,10 +21,15 @@ export function parseYoutubeId(url: string): string | null {
 
 export function formatDuration(minutes: number): string {
   if (isNaN(minutes) || minutes <= 0) return '0m';
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  if (hours > 0) {
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-  }
-  return `${remainingMinutes}m`;
+  const totalSeconds = Math.round(minutes * 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const remainingMinutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (remainingMinutes > 0) parts.push(`${remainingMinutes}m`);
+  if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
+  
+  return parts.length > 0 ? parts.join(' ') : '0m';
 }

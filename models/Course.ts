@@ -3,8 +3,8 @@ import mongoose, { Schema } from 'mongoose';
 const lessonSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String },
-  youtubeUrl: { type: String, required: true },
-  duration: { type: Number, required: true }, // In minutes
+  youtubeUrl: { type: String, default: '' },
+  duration: { type: Number, default: 0 }, // In minutes
   isPreview: { type: Boolean, default: false },
   order: { type: Number, required: true }
 });
@@ -54,6 +54,13 @@ courseSchema.pre('save', function() {
   this.totalLessons = count;
   this.totalDuration = duration;
 });
+
+// Clear cached models in development to avoid stale schema issues during Next.js hot-reloads
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.Course;
+  delete mongoose.models.Module;
+  delete mongoose.models.Lesson;
+}
 
 export const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);
 export const Module = mongoose.models.Module || mongoose.model('Module', moduleSchema);

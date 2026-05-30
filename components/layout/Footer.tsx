@@ -1,7 +1,16 @@
+'use client';
+
 import Link from 'next/link';
 import { GraduationCap } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on specific course overview and learning workspace pages
+  if (pathname?.startsWith('/courses/')) {
+    return null;
+  }
   return (
     <footer className="border-t border-white/10 bg-slate-950 py-12 text-slate-400">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCourse, updateCourse } from '@/actions/course';
-import { Save, PlusCircle, Trash, ArrowLeft, Loader2, Sparkles, AlertCircle, FileEdit, Plus, Trash2 } from 'lucide-react';
+import { Save, PlusCircle, Trash, ArrowLeft, Loader2, Sparkles, AlertCircle, FileEdit, Plus, Trash2, GripVertical } from 'lucide-react';
 
 interface Lesson {
   title: string;
@@ -41,6 +41,20 @@ interface CourseEditorProps {
   };
 }
 
+// Helper functions for Hours, Minutes, Seconds conversion
+const getHMS = (totalMinutes: number) => {
+  if (!totalMinutes || isNaN(totalMinutes)) return { hours: 0, minutes: 0, seconds: 0 };
+  const totalSeconds = Math.round(totalMinutes * 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return { hours, minutes, seconds };
+};
+
+const toDecimalMinutes = (hours: number, minutes: number, seconds: number) => {
+  return hours * 60 + minutes + seconds / 60;
+};
+
 export default function CourseEditor({ initialCourse }: CourseEditorProps) {
   const router = useRouter();
   const isEditing = !!initialCourse;
@@ -68,6 +82,12 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
     ]
   );
 
+  // Drag and drop states
+  const [draggedModuleIdx, setDraggedModuleIdx] = useState<number | null>(null);
+  const [dragOverModuleIdx, setDragOverModuleIdx] = useState<number | null>(null);
+  const [draggedLesson, setDraggedLesson] = useState<{ modIdx: number; lesIdx: number } | null>(null);
+  const [dragOverLesson, setDragOverLesson] = useState<{ modIdx: number; lesIdx: number } | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -93,6 +113,50 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
 
   const removeModule = (modIdx: number) => {
     setModules(prev => prev.filter((_, idx) => idx !== modIdx));
+  };
+
+  const moveModule = (fromIdx: number | null, toIdx: number) => {
+    if (fromIdx === null || fromIdx === toIdx) return;
+    setModules(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIdx, 1);
+      updated.splice(toIdx, 0, moved);
+      return updated.map((m, idx) => ({ ...m, order: idx }));
+    });
+  };
+
+  const moveLesson = (
+    from: { modIdx: number; lesIdx: number } | null,
+    to: { modIdx: number; lesIdx: number }
+  ) => {
+    if (!from) return;
+    setModules(prev => {
+      const updated = [...prev];
+      if (from.modIdx === to.modIdx) {
+        if (from.lesIdx === to.lesIdx) return prev;
+        const mod = { ...updated[from.modIdx] };
+        const lessons = [...mod.lessons];
+        const [moved] = lessons.splice(from.lesIdx, 1);
+        lessons.splice(to.lesIdx, 0, moved);
+        mod.lessons = lessons.map((l, idx) => ({ ...l, order: idx }));
+        updated[from.modIdx] = mod;
+      } else {
+        const sourceMod = { ...updated[from.modIdx] };
+        const destMod = { ...updated[to.modIdx] };
+        const sourceLessons = [...sourceMod.lessons];
+        const destLessons = [...destMod.lessons];
+        
+        const [moved] = sourceLessons.splice(from.lesIdx, 1);
+        destLessons.splice(to.lesIdx, 0, moved);
+        
+        sourceMod.lessons = sourceLessons.map((l, idx) => ({ ...l, order: idx }));
+        destMod.lessons = destLessons.map((l, idx) => ({ ...l, order: idx }));
+        
+        updated[from.modIdx] = sourceMod;
+        updated[to.modIdx] = destMod;
+      }
+      return updated;
+    });
   };
 
   const updateModuleTitle = (modIdx: number, val: string) => {
@@ -135,7 +199,14 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
       if (idx !== modIdx) return m;
       return {
         ...m,
-        lessons: m.lessons.map((l, lIdx) => lIdx === lesIdx ? { ...l, [field]: val } : l)
+        lessons: m.lessons.map((l, lIdx) => {
+          if (lIdx !== lesIdx) return l;
+          let sanitizedVal = val;
+          if (field === 'duration') {
+            sanitizedVal = val === '' ? 0 : Number(val);
+          }
+          return { ...l, [field]: sanitizedVal };
+        })
       };
     }));
   };
@@ -344,10 +415,54 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
             ) : (
               <div className="space-y-4">
                 {modules.map((mod, modIdx) => (
-                  <div key={modIdx} className="border border-slate-900 rounded-xl bg-slate-950/40 p-4 space-y-4">
+                  <div 
+                    key={modIdx} 
+                    className={`border rounded-xl p-4 space-y-4 transition-all duration-200 ${
+                      draggedModuleIdx === modIdx 
+                        ? 'opacity-40 border-amber-500/50 bg-slate-900/40 border-dashed scale-[0.995]' 
+                        : dragOverModuleIdx === modIdx
+                          ? 'border-amber-500/30 bg-amber-500/5'
+                          : 'border-slate-900 bg-slate-950/40'
+                    }`}
+                    onDragOver={(e) => {
+                      if (draggedModuleIdx !== null) {
+                        e.preventDefault();
+                        if (dragOverModuleIdx !== modIdx) {
+                          setDragOverModuleIdx(modIdx);
+                        }
+                      }
+                    }}
+                    onDragLeave={() => {
+                      setDragOverModuleIdx(null);
+                    }}
+                    onDrop={(e) => {
+                      if (draggedModuleIdx !== null) {
+                        e.preventDefault();
+                        moveModule(draggedModuleIdx, modIdx);
+                        setDraggedModuleIdx(null);
+                        setDragOverModuleIdx(null);
+                      }
+                    }}
+                  >
                     {/* Module title manager */}
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2 flex-1">
+                        <button
+                          type="button"
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedModuleIdx(modIdx);
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => {
+                            setDraggedModuleIdx(null);
+                            setDragOverModuleIdx(null);
+                          }}
+                          className="text-slate-600 hover:text-amber-500 cursor-grab active:cursor-grabbing p-1.5 transition shrink-0"
+                          title="Drag to reorder module"
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </button>
                         <span className="text-xs font-bold text-slate-600 font-mono">M{modIdx + 1}</span>
                         <input 
                           type="text"
@@ -384,10 +499,54 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
                         <p className="text-xs text-slate-650 italic py-1 pl-2">No lessons added to this module yet.</p>
                       ) : (
                         mod.lessons.map((les, lesIdx) => (
-                          <div key={lesIdx} className="bg-slate-950/20 border border-slate-900 rounded-lg p-3 space-y-3 relative group">
+                          <div 
+                            key={lesIdx} 
+                            className={`border rounded-lg p-3 space-y-3 relative group transition-all duration-200 ${
+                              draggedLesson && draggedLesson.modIdx === modIdx && draggedLesson.lesIdx === lesIdx
+                                ? 'opacity-40 border-amber-500/50 bg-slate-900/40 border-dashed scale-[0.99]'
+                                : dragOverLesson && dragOverLesson.modIdx === modIdx && dragOverLesson.lesIdx === lesIdx
+                                  ? 'border-amber-500/30 bg-amber-500/5'
+                                  : 'border-slate-900 bg-slate-950/20'
+                            }`}
+                            onDragOver={(e) => {
+                              if (draggedLesson !== null) {
+                                e.preventDefault();
+                                if (!dragOverLesson || dragOverLesson.modIdx !== modIdx || dragOverLesson.lesIdx !== lesIdx) {
+                                  setDragOverLesson({ modIdx, lesIdx });
+                                }
+                              }
+                            }}
+                            onDragLeave={() => {
+                              setDragOverLesson(null);
+                            }}
+                            onDrop={(e) => {
+                              if (draggedLesson !== null) {
+                                e.preventDefault();
+                                moveLesson(draggedLesson, { modIdx, lesIdx });
+                                setDraggedLesson(null);
+                                setDragOverLesson(null);
+                              }
+                            }}
+                          >
                             
                             {/* Header details block */}
                             <div className="flex items-center justify-between gap-4">
+                              <button
+                                type="button"
+                                draggable
+                                onDragStart={(e) => {
+                                  setDraggedLesson({ modIdx, lesIdx });
+                                  e.dataTransfer.effectAllowed = 'move';
+                                }}
+                                onDragEnd={() => {
+                                  setDraggedLesson(null);
+                                  setDragOverLesson(null);
+                                }}
+                                className="text-slate-600 hover:text-amber-500 cursor-grab active:cursor-grabbing p-1 transition shrink-0"
+                                title="Drag to reorder lesson"
+                              >
+                                <GripVertical className="h-3.5 w-3.5" />
+                              </button>
                               <span className="text-[10px] font-bold text-slate-600 font-mono shrink-0">L{lesIdx + 1}</span>
                               <input 
                                 type="text"
@@ -410,34 +569,77 @@ export default function CourseEditor({ initialCourse }: CourseEditorProps) {
                             {/* Lesson parameters grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               <div className="space-y-1">
-                                <label className="text-[9px] font-semibold  uppercase tracking-wider">YouTube URL / ID</label>
+                                <label className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">YouTube URL / ID (Optional)</label>
                                 <input 
                                   type="text"
-                                  required
                                   value={les.youtubeUrl}
                                   onChange={(e) => updateLessonField(modIdx, lesIdx, 'youtubeUrl', e.target.value)}
-                                  placeholder="https://youtu.be/..."
+                                  placeholder="https://youtu.be/... (optional)"
                                   className="w-full rounded border text-white border-slate-900 bg-slate-950 px-2 py-1 text-[11px] text-slate-350 focus:border-amber-500 focus:outline-none font-mono"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[9px] font-semibold  uppercase tracking-wider">Duration (Minutes)</label>
-                                <input 
-                                  type="number"
-                                  required
-                                  value={les.duration}
-                                  onChange={(e) => updateLessonField(modIdx, lesIdx, 'duration', e.target.value)}
-                                  placeholder="10"
-                                  className="w-full rounded border border-slate-900 text-white px-2 py-1 text-[11px] text-slate-350 focus:border-amber-500 focus:outline-none"
-                                />
+                                <label className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Lesson Duration (Optional)</label>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  <div className="flex items-center gap-1 bg-slate-950 rounded border border-slate-900 px-1.5 py-1">
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      placeholder="0"
+                                      value={getHMS(les.duration).hours || ''}
+                                      onChange={(e) => {
+                                        const hms = getHMS(les.duration);
+                                        const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0);
+                                        const newDuration = toDecimalMinutes(val, hms.minutes, hms.seconds);
+                                        updateLessonField(modIdx, lesIdx, 'duration', newDuration);
+                                      }}
+                                      className="w-full bg-transparent text-white text-[11px] focus:outline-none text-center font-mono"
+                                    />
+                                    <span className="text-[9px] text-slate-550 font-bold uppercase shrink-0">h</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 bg-slate-950 rounded border border-slate-900 px-1.5 py-1">
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      max="59"
+                                      placeholder="0"
+                                      value={getHMS(les.duration).minutes || ''}
+                                      onChange={(e) => {
+                                        const hms = getHMS(les.duration);
+                                        const val = e.target.value === '' ? 0 : Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                                        const newDuration = toDecimalMinutes(hms.hours, val, hms.seconds);
+                                        updateLessonField(modIdx, lesIdx, 'duration', newDuration);
+                                      }}
+                                      className="w-full bg-transparent text-white text-[11px] focus:outline-none text-center font-mono"
+                                    />
+                                    <span className="text-[9px] text-slate-550 font-bold uppercase shrink-0">m</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 bg-slate-950 rounded border border-slate-900 px-1.5 py-1">
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      max="59"
+                                      placeholder="0"
+                                      value={getHMS(les.duration).seconds || ''}
+                                      onChange={(e) => {
+                                        const hms = getHMS(les.duration);
+                                        const val = e.target.value === '' ? 0 : Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                                        const newDuration = toDecimalMinutes(hms.hours, hms.minutes, val);
+                                        updateLessonField(modIdx, lesIdx, 'duration', newDuration);
+                                      }}
+                                      className="w-full bg-transparent text-white text-[11px] focus:outline-none text-center font-mono"
+                                    />
+                                    <span className="text-[9px] text-slate-550 font-bold uppercase shrink-0">s</span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1.5 self-end pb-1.5 pl-1.5">
+                              <div className="flex items-center gap-1.5 self-end pb-2.5 pl-2">
                                 <input 
                                   type="checkbox"
                                   id={`prev-${modIdx}-${lesIdx}`}
                                   checked={les.isPreview}
                                   onChange={(e) => updateLessonField(modIdx, lesIdx, 'isPreview', e.target.checked)}
-                                  className="rounded text-white border-slate-800  bg-slate-950 focus:ring-violet-500 shrink-0 h-4 w-4"
+                                  className="rounded text-white border-slate-800 bg-slate-950 focus:ring-violet-500 shrink-0 h-4 w-4"
                                 />
                                 <label htmlFor={`prev-${modIdx}-${lesIdx}`} className="text-[10px] font-bold text-white uppercase tracking-widest cursor-pointer select-none">
                                   Free Preview

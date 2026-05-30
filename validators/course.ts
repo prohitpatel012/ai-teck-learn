@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const zodLessonSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional().default(''),
-  youtubeUrl: z.string().min(1, 'YouTube URL is required'),
-  duration: z.coerce.number().min(1, 'Duration must be at least 1 minute'),
+  youtubeUrl: z.string().optional().default(''),
+  duration: z.coerce.number().optional().default(0),
   isPreview: z.boolean().default(false),
   order: z.number().default(0),
 });

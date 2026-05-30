@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookOpen, CheckCircle, Circle, ArrowLeft, PlayCircle, BookOpenCheck, Edit3, Info, ChevronRight, CheckSquare, Square, Menu } from 'lucide-react';
-import { parseYoutubeId } from '@/lib/utils';
+import { parseYoutubeId, formatDuration } from '@/lib/utils';
 
 interface Lesson {
   _id: string;
@@ -219,10 +219,18 @@ export default function LearningWorkspace({ course, initialProgress }: LearningW
                 allowFullScreen
                 className="w-full h-full absolute inset-0"
               />
-            ) : (
+            ) : activeLesson?.youtubeUrl ? (
               <div className="flex flex-col items-center gap-2 text-slate-550">
                 <PlayCircle className="h-12 w-12 animate-pulse text-violet-500" />
                 <span className="text-xs font-semibold uppercase tracking-wider">Loading video player...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-slate-400 p-8 text-center">
+                <PlayCircle className="h-12 w-12 text-slate-650" />
+                <h4 className="text-sm font-bold text-white">No video content yet</h4>
+                <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+                  This lesson does not have a video URL assigned yet. You can read the study notes below or proceed to the next lesson.
+                </p>
               </div>
             )}
           </div>
@@ -373,7 +381,7 @@ export default function LearningWorkspace({ course, initialProgress }: LearningW
                           <p className={`text-xs font-medium leading-tight truncate ${isActive ? 'text-violet-300' : ''}`}>
                             {les.title}
                           </p>
-                          <span className="text-[10px] text-slate-550 block">{les.duration} mins</span>
+                          <span className="text-[10px] text-slate-550 block">{formatDuration(les.duration)}</span>
                         </div>
                       </button>
                     );

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, PlayCircle, Eye, Clock, X } from 'lucide-react';
-import { parseYoutubeId } from '@/lib/utils';
+import { parseYoutubeId, formatDuration } from '@/lib/utils';
 
 interface Lesson {
   _id: any;
@@ -56,7 +56,7 @@ export default function CourseSyllabus({ modules }: CourseSyllabusProps) {
         <div className="space-y-3">
           {modules.map((mod, modIdx) => {
             const isOpen = !!openModules[modIdx];
-            const totalDuration = mod.lessons.reduce((acc, curr) => acc + curr.duration, 0);
+            const totalDuration = mod.lessons.reduce((acc, curr) => acc + (curr.duration || 0), 0);
 
             return (
               <div 
@@ -77,7 +77,7 @@ export default function CourseSyllabus({ modules }: CourseSyllabusProps) {
                   <div className="flex items-center gap-4 text-xs text-slate-500 font-semibold shrink-0">
                     <span>{mod.lessons.length} classes</span>
                     <span>&bull;</span>
-                    <span>{totalDuration}m</span>
+                    <span>{formatDuration(totalDuration)}</span>
                     {isOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                   </div>
                 </button>
@@ -107,7 +107,7 @@ export default function CourseSyllabus({ modules }: CourseSyllabusProps) {
                           
                           <div className="flex items-center gap-4 shrink-0">
                             <span className="text-xs text-slate-500 flex items-center gap-1">
-                              <Clock className="h-3.5 w-3.5" /> {les.duration}m
+                              <Clock className="h-3.5 w-3.5" /> {formatDuration(les.duration)}
                             </span>
                             {les.isPreview ? (
                               <button
